@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
 import numpy as np
-from svgwrite import Drawing
-from matplotlib.colors import to_hex
+from matplotlib.patches import Polygon
+from matplotlib.widgets import Button
+import os
+from datetime import datetime
 
 def create_polygon(sides, radius, center, rotation=0):
     angles = np.linspace(0, 2 * np.pi, sides, endpoint=False) + rotation
@@ -10,66 +11,73 @@ def create_polygon(sides, radius, center, rotation=0):
     points += center
     return points
 
-def create_mandala_layer(center, max_radius, num_shapes, shape_sides, dwg, color, depth=0, rotation=0):
-    if depth == 0:
-        return
+def add_layer(ax, center, max_radius, num_shapes, shape_sides, facecolor, depth=0, rotation=0):
+    polygons = []
+    if depth == 0 or max_radius < 10:  # Prevent radius from becoming too small
+        return polygons
     for i in range(num_shapes):
         angle = 2 * np.pi / num_shapes * i + rotation
-        new_center = center + np.array([np.cos(angle), np.sin(angle)]) * max_radius / (3 + depth)
-        radius = max_radius * ((3 - depth) / 3.5)  # reduced radius for complexity
+        new_center = center + np.array([np.cos(angle), np.sin(angle)]) * max_radius / (2 + depth)
+        radius = max_radius * ((3 - depth) / 3.5) 
         points = create_polygon(shape_sides, radius, new_center, rotation=np.random.rand() * 2 * np.pi)
-        dwg.add(dwg.polygon(points.tolist(), fill=color))
-        # Reduce the number of recursive calls
-        if depth < 3:
-            create_mandala_layer(new_center, radius / 2, num_shapes - 1, shape_sides, dwg, color, depth - 1, rotation=rotation)
+        polygon = Polygon(points, closed=True, facecolor=facecolor, edgecolor='black')
+        ax.add_patch(polygon)
+        polygons.append(polygon)
+        polygons.extend(add_layer(ax, new_center, radius / 2, num_shapes, shape_sides, facecolor, depth + 1, rotation))
+    return polygons
 
-def create_mandala(size, layers, num_shapes, shape_sides):
-    dwgs = []
-    colors = [to_hex(c) for c in plt.cm.viridis(np.linspace(0, 1, layers))]
+def create_mandala(ax, size, layers, num_shapes, shape_sides):
+    ax.clear()
+    colors = plt.cm.viridis(np.linspace(0, 1, layers))
     center = np.array([size / 2, size / 2])
+    all_polygons = []
     for i in range(layers):
-        dwg = Drawing(size=(f"{size}px", f"{size}px"), profile='tiny')
-        rotation = np.random.rand() * 2 * np.pi
-        # Start with a lower depth to reduce complexity
-        create_mandala_layer(center, size / 2, num_shapes, shape_sides, dwg, colors[i], depth=2, rotation=rotation)
-        dwgs.append((dwg, colors[i]))
-    return dwgs
+        rotation = np.random.rand() * 2 * np.pi  # Randomize rotation for each layer
+        polygons = add_layer(ax, center, size / 2, num_shapes, shape_sides, colors[i], depth=i+1, rotation=rotation)
+        all_polygons.append(polygons)
+    ax.set_xlim(0, size)
+    ax.set_ylim(0, size)
+    ax.set_aspect('equal')
+    ax.axis('off')
+    return all_polygons
 
 def on_generate(event):
-    global dwgs
-    ax.clear()
-    dwgs = create_mandala(size, layers, num_shapes, shape_sides)
-    for dwg, color in dwgs:
-        for elem in dwg.elements:
-            if hasattr(elem, 'points'):
-                points = np.array(elem.points)
-                ax.fill(points[:, 0], points[:, 1], color)
-    ax.set_aspect('equal', adjustable='box')
-    ax.axis('off')
+    global all_polygons
+    all_polygons = create_mandala(ax, size, layers, num_shapes, shape_sides)
     fig.canvas.draw_idle()
 
-def on_save(event):
-    save_svgs(dwgs)
+def save_svg(polygons, filename):
+    # Create a new figure for saving SVGs
+    fig_svg, ax_svg = plt.subplots()
+    ax_svg.set_xlim(0, size)
+    ax_svg.set_ylim(0, size)
+    ax_svg.axis('off')
+    for poly in polygons:
+        ax_svg.add_patch(Polygon(poly.get_xy(), closed=True, facecolor=poly.get_facecolor(), edgecolor='black'))
+    fig_svg.savefig(filename, bbox_inches='tight', pad_inches=0, transparent=True)
+    plt.close(fig_svg)
 
-def save_svgs(dwgs):
-    for i, (dwg, _) in enumerate(dwgs):
-        filename = f'layer_{i + 1}.svg'
-        dwg.saveas(filename)
-        print(f"Saved {filename}")
+def on_save(event):
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    directory = f"mandala_layers_{timestamp}"
+    os.makedirs(directory, exist_ok=True)
+    for i, layer_polygons in enumerate(all_polygons):
+        if layer_polygons:  # Check if layer is not empty
+            filename = os.path.join(directory, f'layer_{i + 1}.svg')
+            save_svg(layer_polygons, filename)
 
 size = 800
-layers = 3  # reduced number of layers for complexity
-num_shapes = 50  # reduced number of shapes for complexity
-shape_sides = 3
+layers = 4
+num_shapes = 8
+shape_sides = 8
 
 fig, ax = plt.subplots(figsize=(8, 8))
-ax.set_position([0.1, 0.3, 0.8, 0.65])  # Adjust the position of the main axes
-ax_generate = plt.axes([0.7, 0.05, 0.1, 0.075])  # Position of the 'Generate' button
-ax_save = plt.axes([0.81, 0.05, 0.1, 0.075])  # Position of the 'Save SVGs' button
-btn_generate = Button(ax_generate, 'Generate')
+btn_generate = Button(plt.axes([0.7, 0.05, 0.1, 0.075]), 'Generate')
 btn_generate.on_clicked(on_generate)
-btn_save = Button(ax_save, 'Save SVGs')
+btn_save = Button(plt.axes([0.81, 0.05, 0.1, 0.075]), 'Save SVGs')
 btn_save.on_clicked(on_save)
-plt.axis('off')
-on_generate(None)  # Generate initial pattern
+
+# Initial mandala creation for display
+all_polygons = create_mandala(ax, size, layers, num_shapes, shape_sides)
+
 plt.show()
