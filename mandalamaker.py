@@ -14,35 +14,35 @@ def create_polygon(sides, radius, center, rotation=0):
 
 def add_layer(ax, center, max_radius, num_shapes, shape_sides, facecolor, depth=0, rotation=0):
     polygons = []
-    if depth == 0 or max_radius < 10:  # Prevent radius from becoming too small
+    if depth == 0 or max_radius < 10:
         return polygons
     for i in range(num_shapes):
         angle = 2 * np.pi / num_shapes * i + rotation
         new_center = center + np.array([np.cos(angle), np.sin(angle)]) * max_radius / (2 + depth)
-        inner_radius = max_radius / (3 + (depth * 2))
-        outer_radius = max_radius / (2 + depth)
+        r_variation = np.random.uniform(0.7, 1.0)
+        inner_radius = max_radius * r_variation / (3 + (depth * 2))
+        outer_radius = max_radius * r_variation / (2 + depth)
         points = create_complex_shape(shape_sides, inner_radius, outer_radius, new_center, rotation)
-        path = Path(points)
+        path = Path(points, closed=True)
         patch = PathPatch(path, facecolor=facecolor, edgecolor='black', linewidth=0.5)
         ax.add_patch(patch)
         polygons.append(patch)
-        # Recursively add more layers
         polygons.extend(add_layer(ax, new_center, outer_radius / 3, num_shapes, shape_sides, facecolor, depth + 1, rotation))
     return polygons
+
 
 def create_mandala(ax, size, layers, num_shapes, shape_sides):
     ax.clear()
     center = np.array([size / 2, size / 2])
     all_polygons = []
     for i in range(layers):
-        # Randomize the rotation and shape parameters for each layer
         rotation = np.random.rand() * 2 * np.pi
-        num_shapes_layer = np.random.randint(low=5, high=num_shapes)
-        shape_sides_layer = np.random.randint(low=5, high=shape_sides)
-        alpha = 0.1 + (0.9 / layers) * (layers - i)
-        r, g, b, _ = plt.cm.viridis(i / layers)
+        num_shapes_layer = np.random.randint(5, num_shapes)
+        shape_sides_layer = np.random.randint(4, shape_sides)
+        alpha = 0.1 + (0.9 / layers) * i
+        r, g, b, _ = plt.cm.viridis(np.random.rand())
         facecolor = (r, g, b, alpha)
-        layer_polygons = add_layer(ax, center, size / 2, num_shapes_layer, shape_sides_layer, facecolor, depth=i + 1, rotation=rotation)
+        layer_polygons = add_layer(ax, center, size / 2, num_shapes_layer, shape_sides_layer, facecolor, depth=i+1, rotation=rotation)
         all_polygons.append(layer_polygons)
     ax.set_xlim(0, size)
     ax.set_ylim(0, size)
@@ -51,15 +51,17 @@ def create_mandala(ax, size, layers, num_shapes, shape_sides):
     return all_polygons
 
 
+
 def create_complex_shape(sides, inner_radius, outer_radius, center, rotation=0):
-    # Define a complex star-like shape with alternating radii
-    angles = np.linspace(0, 2 * np.pi, sides*2, endpoint=False) + rotation
+    # Create more intricate shapes by adding curves and additional points
+    angles = np.linspace(0, 2 * np.pi, sides * 2, endpoint=False) + rotation
     points = []
-    for angle in angles[::2]:
-        points.append(center + np.array([np.cos(angle), np.sin(angle)]) * outer_radius)
-    for angle in angles[1::2]:
-        points.append(center + np.array([np.cos(angle), np.sin(angle)]) * inner_radius)
+    for angle in angles:
+        r = outer_radius if angle % (2 * np.pi / sides) == 0 else inner_radius
+        point = center + np.array([np.cos(angle), np.sin(angle)]) * r
+        points.append(point)
     return points
+
 def on_generate(event):
     global all_polygons
     # Call create_mandala with the correct number of arguments
