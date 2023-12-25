@@ -24,28 +24,27 @@ def create_grid(center, size, num_layers):
     return points
 
 
-def create_star(center, inner_radius, outer_radius, num_points):
-    # Create the vertices of the star
+def create_star(center, radius, num_points):
+    # Generate a star with precise geometric properties
     points = []
     for i in range(num_points * 2):
-        angle = (i * np.pi / num_points) + (np.pi / num_points if i % 2 else 0)
-        radius = outer_radius if i % 2 else inner_radius
-        points.append((center[0] + np.cos(angle) * radius, center[1] + np.sin(angle) * radius))
+        angle = i * np.pi / num_points
+        r = radius if i % 2 == 0 else radius / 2
+        points.append((center[0] + np.cos(angle) * r, center[1] + np.sin(angle) * r))
+    points.append(points[0])  # Close the star path
     return points
 
+
 def create_complex_star(center, size, num_layers):
+    # Create a more complex and layered star pattern
     points = []
-    for i in range(num_layers):
-        num_points = random.randint(5, 15)
-        inner_radius = size * random.uniform(0.1, 0.5)
-        outer_radius = inner_radius + size * random.uniform(0.1, 0.5)
-        angle_offset = random.uniform(0, 2 * np.pi)
-        for j in range(num_points):
-            angle = (j * 2 * np.pi / num_points) + angle_offset
-            radius = outer_radius if j % 2 else inner_radius
-            points.append((center[0] + np.cos(angle) * radius, center[1] + np.sin(angle) * radius))
-        points.append(points[0])  # Close the star path
+    for i in range(1, num_layers + 1):
+        radius = size * (num_layers - i + 1) / num_layers
+        num_points = random.choice([5, 6, 8, 10, 12])  # More traditional point numbers
+        star_points = create_star(center, radius, num_points)
+        points.extend(star_points)
     return points
+
 
 
 def generate_layer(center, size, num_layers, layer_num):
