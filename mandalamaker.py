@@ -1,137 +1,124 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Polygon, PathPatch
+from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 from matplotlib.widgets import Button
 import os
 from datetime import datetime
+import random
 
-
-def create_segment(sides, center, radius, rotation=0):
-    angles = np.linspace(rotation, rotation + np.pi / sides, 3)  # Segment of a circle
-    points = [center]  # Start with the center point
-    for angle in angles:
-        points.append(center + np.array([np.cos(angle), np.sin(angle)]) * radius)
-    return points
-def repeat_segment_around_center(segment, center, num_repeats):
+def create_hexagon(center, radius):
     points = []
-    for i in range(num_repeats):
-        rotation = i * (2 * np.pi / num_repeats)
-        rotated_points = [rotate_point(p, center, rotation) for p in segment]
-        points.extend(rotated_points[:-1])  # Exclude the last point as it will be repeated
+    for i in range(6):
+        angle = i * np.pi / 3
+        points.append((center[0] + np.cos(angle) * radius, center[1] + np.sin(angle) * radius))
     return points
 
-def rotate_point(point, center, angle):
-    offset_point = point - center
-    rotated_offset = np.array([
-        np.cos(angle) * offset_point[0] - np.sin(angle) * offset_point[1],
-        np.sin(angle) * offset_point[0] + np.cos(angle) * offset_point[1]
-    ])
-    return center + rotated_offset
-
-
-def create_polygon(sides, radius, center, rotation=0):
-    angles = np.linspace(0, 2 * np.pi, sides, endpoint=False) + rotation
-    points = np.vstack((np.sin(angles), np.cos(angles))).T * radius
-    points += center
-    return points
-
-def add_layer(ax, center, max_radius, num_shapes, facecolor, depth=0):
-    if depth == 0 or max_radius < 10:
-        return []
-    polygons = []
-    for i in range(num_shapes):
-        radius = np.random.uniform(0.1 * max_radius, max_radius / (depth + 2))
-        segment = create_segment(num_shapes, center, radius, rotation=np.random.rand() * 2 * np.pi)
-        points = repeat_segment_around_center(segment, center, num_shapes)
-        path = Path(points, closed=True)
-        patch = PathPatch(path, facecolor=facecolor, edgecolor='black', linewidth=0.5)
-        ax.add_patch(patch)
-        polygons.append(patch)
-    return polygons
-
-
-def create_mandala(ax, size, layers, num_shapes):
-    ax.clear()
-    center = np.array([size / 2, size / 2])
-    all_polygons = []
-    for i in range(layers):
-        r, g, b, _ = plt.cm.viridis(np.random.rand())
-        facecolor = (r, g, b, 0.5)  # Semi-transparent colors
-        layer_polygons = add_layer(ax, center, size / 2, num_shapes, facecolor, depth=i + 1)
-        all_polygons.append(layer_polygons)
-    ax.set_xlim(0, size)
-    ax.set_ylim(0, size)
-    ax.set_aspect('equal')
-    ax.axis('off')
-    return all_polygons
-
-
-
-def create_symmetrical_shape(sides, center, max_radius, rotation=0):
-    # Create shapes with a random but symmetrical pattern
-    angles = np.linspace(0, 2 * np.pi, sides, endpoint=False) + rotation
+def create_grid(center, size, num_layers):
     points = []
-    for angle in angles:
-        radius = np.random.uniform(0.5 * max_radius, max_radius)
-        points.append(center + np.array([np.cos(angle), np.sin(angle)]) * radius)
+    for i in range(num_layers):
+        for j in range(num_layers):
+            grid_center = (center[0] + i * size / num_layers, center[1] + j * size / num_layers)
+            hexagon_points = create_hexagon(grid_center, size / num_layers / 2)
+            points.extend(hexagon_points)
     return points
 
-def create_complex_shape(sides, inner_radius, outer_radius, center, rotation=0):
-    # Enhanced complex shape creation for more intricate patterns
-    angles = np.linspace(0, 2 * np.pi, sides * 4, endpoint=False) + rotation
+
+def create_star(center, inner_radius, outer_radius, num_points):
+    # Create the vertices of the star
     points = []
-    for i, angle in enumerate(angles):
-        if i % 4 == 0:
-            r = outer_radius
-        elif i % 4 == 2:
-            r = inner_radius
-        else:
-            r = (inner_radius + outer_radius) / 2
-        point = center + np.array([np.cos(angle), np.sin(angle)]) * r
-        points.append(point)
+    for i in range(num_points * 2):
+        angle = (i * np.pi / num_points) + (np.pi / num_points if i % 2 else 0)
+        radius = outer_radius if i % 2 else inner_radius
+        points.append((center[0] + np.cos(angle) * radius, center[1] + np.sin(angle) * radius))
     return points
+
+def create_complex_star(center, size, num_layers):
+    points = []
+    for i in range(num_layers):
+        num_points = random.randint(5, 15)
+        inner_radius = size * random.uniform(0.1, 0.5)
+        outer_radius = inner_radius + size * random.uniform(0.1, 0.5)
+        angle_offset = random.uniform(0, 2 * np.pi)
+        for j in range(num_points):
+            angle = (j * 2 * np.pi / num_points) + angle_offset
+            radius = outer_radius if j % 2 else inner_radius
+            points.append((center[0] + np.cos(angle) * radius, center[1] + np.sin(angle) * radius))
+        points.append(points[0])  # Close the star path
+    return points
+
+
+def generate_layer(center, size, num_layers, layer_num):
+    # Adjust the size of the star based on the layer
+    inner_radius = size * 0.1 * (num_layers - layer_num)
+    outer_radius = size * 0.2 * (num_layers - layer_num)
+    num_points = np.random.randint(5, 9)  # Random number of star points
+    star_points = create_star(center, inner_radius, outer_radius, num_points)
+    path = Path(star_points + [star_points[0]])  # Close the star path
+    return path
+
+def draw_mandala(ax, center, size, num_layers):
+    global all_paths
+    all_paths = []  # Clear the list of paths
+    grid_size = int(np.sqrt(num_layers))
+    cell_size = size / grid_size
+    for i in range(grid_size):
+        for j in range(grid_size):
+            star_points = create_complex_star(center, cell_size, random.randint(1, 5))
+            path = Path(star_points)
+            all_paths.append(path)  # Store the path
+            patch = PathPatch(path, facecolor=np.random.rand(3,), alpha=0.5, edgecolor='none')
+            ax.add_patch(patch)
+
+
 
 def on_generate(event):
-    global all_polygons
-    all_polygons = create_mandala(ax, size, layers, num_shapes)
-    fig.canvas.draw_idle()
+    global all_paths
+    ax.clear()
+    all_paths = []  # Clear the list of paths
+    draw_mandala(ax,(0.5, 0.5),1.0, layers)  # Adjust the size to 1.0
+    ax.relim()
+    ax.autoscale_view()
+    fig.canvas.draw()
 
-def save_svg(polygons, filename):
-    fig_svg, ax_svg = plt.subplots()
-    ax_svg.set_xlim(0, size)
-    ax_svg.set_ylim(0, size)
-    ax_svg.axis('off')
-    for poly in polygons:
-        # Use the original path of the PathPatch for the new patch
-        path_patch = PathPatch(poly.get_path(), facecolor=poly.get_facecolor(), edgecolor='black')
-        ax_svg.add_patch(path_patch)
-    fig_svg.savefig(filename, bbox_inches='tight', pad_inches=0, transparent=True)
-    plt.close(fig_svg)
+
+
+def save_svg(path, filename):
+    fig, ax = plt.subplots(figsize=(6, 6))  # Set the figure size to be square
+    ax.add_patch(PathPatch(path))
+    ax.relim()
+    ax.autoscale_view()
+    plt.axis('off')
+    plt.rcParams['svg.fonttype'] = 'none'
+    plt.savefig(filename, format='svg')
+
 
 
 def on_save(event):
     timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     directory = f"mandala_layers_{timestamp}"
     os.makedirs(directory, exist_ok=True)
-    for i, layer_polygons in enumerate(all_polygons):
-        if layer_polygons:  # Check if layer is not empty
-            filename = os.path.join(directory, f'layer_{i + 1}.svg')
-            save_svg(layer_polygons, filename)
+    for i, path in enumerate(all_paths):
+        filename = os.path.join(directory, f'layer_{i + 1}.svg')
+        save_svg(path, filename)
 
-size = 800
-layers = 4
-num_shapes = 8
-shape_sides = 8
+size = 1.0
+layers = 5
+all_paths = []
 
-fig, ax = plt.subplots(figsize=(8, 8))
-
-# Initial mandala creation for display
-all_polygons = create_mandala(ax, size, layers, num_shapes)
+fig, ax = plt.subplots()
 btn_generate = Button(plt.axes([0.7, 0.05, 0.1, 0.075]), 'Generate')
 btn_generate.on_clicked(on_generate)
 btn_save = Button(plt.axes([0.81, 0.05, 0.1, 0.075]), 'Save SVGs')
 btn_save.on_clicked(on_save)
 
+ax.set_xlim(-0.5, 0.5)
+ax.set_ylim(-0.5, 0.5)
+
+ax.set_aspect(1)
+ax.axis('off')
+
+# Generate initial mandala
+on_generate(None)
 
 plt.show()
