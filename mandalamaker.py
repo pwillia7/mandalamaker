@@ -6,6 +6,8 @@ from matplotlib.widgets import Button
 import os
 from datetime import datetime
 import random
+import matplotlib.colors as mcolors
+
 
 def create_hexagon(center, radius):
     points = []
@@ -109,17 +111,20 @@ def generate_star(center, radius, num_points, randomness=False):
 def create_pattern(center, size, num_layers):
     pattern_paths = []
     for layer in range(num_layers):
-        # Introduce more variety in the shapes
-        shape = random.choice([6, 8, 10, 12])
+        # Ensure that the number of sides is even for symmetry
+        shape = random.choice([6, 8, 12])
         radius = size * (layer + 1) / num_layers
         star_radius = radius * random.uniform(0.8, 1.2)
-        star_points = random.choice([6, 8, 10, 12])  # More points for complexity
+        # Ensure star points are even and the shape is closed for symmetry
+        star_points = random.choice([6, 8, 10, 12]) * 2
         base_shape = generate_base_shape(center, radius, shape)
         star = generate_star(center, star_radius, star_points)
-        # Combine base shapes and stars to form a complex pattern
-        combined_pattern = base_shape + star
-        pattern_paths.append(combined_pattern)
+        # Close the shape to complete the pattern
+        star.append(star[0])
+        base_shape.append(base_shape[0])
+        pattern_paths.extend([base_shape, star])  # Combine base and star
     return pattern_paths
+
 
 
 def generate_color_palette():
@@ -142,25 +147,24 @@ def generate_interlaced_star(center, size, num_vertices):
 def draw_pattern(ax, center, size, num_layers):
     global all_paths
     all_paths = []
-    color_palette = generate_color_palette()  # Generate a new color palette for each pattern
-
+    color_palette = generate_color_palette()
     pattern_layers = create_pattern(center, size, num_layers)
-    base_line_width = 1.0  # Base line width for the outermost layer
+
     for i, pattern in enumerate(pattern_layers):
-        # Adjust line width for visibility without overcrowding
-        line_width = max(base_line_width - 0.15 * i, 0.4)
+        line_width = max(1.0 - 0.1 * (i // 2), 0.3)  # Adjust line width, reduce it every two layers
         color = color_palette[i % len(color_palette)]
-        pattern_path = Path(pattern + [pattern[0]])  # Close the path for each combined pattern
+        # Create a path for the combined pattern and add it as a patch
+        pattern_path = Path(pattern)
         patch = PathPatch(pattern_path, facecolor='none', edgecolor=color, linewidth=line_width)
         ax.add_patch(patch)
         all_paths.append(pattern_path)
 
     # Set the plot limits to ensure the pattern is centered and zoomed appropriately
-    pattern_bound = size * num_layers
-    ax.set_xlim(center[0] - pattern_bound, center[0] + pattern_bound)
-    ax.set_ylim(center[1] - pattern_bound, center[1] + pattern_bound)
+    ax.set_xlim(center[0] - size, center[0] + size)
+    ax.set_ylim(center[1] - size, center[1] + size)
     ax.set_aspect(1)
     ax.axis('off')
+
 
 def on_generate(event):
     ax.clear()
