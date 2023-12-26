@@ -147,17 +147,20 @@ def generate_interlaced_star(center, size, num_vertices):
 def draw_pattern(ax, center, size, num_layers):
     global all_paths
     all_paths = []
-    color_palette = generate_color_palette()
-    pattern_layers = create_pattern(center, size, num_layers)
+    color_palette = generate_color_palette()  # Generate a new color palette for each pattern
 
+    pattern_layers = create_pattern(center, size, num_layers)
+    base_line_width = 1.0  # Base line width for the outermost layer
     for i, pattern in enumerate(pattern_layers):
-        line_width = max(1.0 - 0.1 * (i // 2), 0.3)  # Adjust line width, reduce it every two layers
+        line_width = max(base_line_width - 0.1 * i, 0.3)
         color = color_palette[i % len(color_palette)]
-        # Create a path for the combined pattern and add it as a patch
+        hex_color = mcolors.to_hex(color)  # Convert color to hex string
         pattern_path = Path(pattern)
-        patch = PathPatch(pattern_path, facecolor='none', edgecolor=color, linewidth=line_width)
+        patch = PathPatch(pattern_path, facecolor='none', edgecolor=hex_color, linewidth=line_width)
         ax.add_patch(patch)
-        all_paths.append(pattern_path)
+        # Store path along with its hex color and line width
+        all_paths.append((pattern_path, hex_color, line_width))
+
 
     # Set the plot limits to ensure the pattern is centered and zoomed appropriately
     ax.set_xlim(center[0] - size, center[0] + size)
@@ -177,26 +180,55 @@ def on_generate(event):
     fig.canvas.draw()
 
 
-
-
-def save_svg(path, filename):
-    fig, ax = plt.subplots(figsize=(6, 6))  # Set the figure size to be square
-    ax.add_patch(PathPatch(path))
-    ax.relim()
-    ax.autoscale_view()
-    plt.axis('off')
-    plt.rcParams['svg.fonttype'] = 'none'
-    plt.savefig(filename, format='svg')
-
-
-
+def save_svg(figure, filename):
+    figure.savefig(filename, format='svg', bbox_inches='tight', pad_inches=0.1, transparent=True)
 def on_save(event):
     timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-    directory = f"mandala_layers_{timestamp}"
-    os.makedirs(directory, exist_ok=True)
-    for i, path in enumerate(all_paths):
-        filename = os.path.join(directory, f'layer_{i + 1}.svg')
-        save_svg(path, filename)
+    parent_dir = f"mandala_generation_{timestamp}"
+    os.makedirs(parent_dir, exist_ok=True)
+
+    # Save the full mandala without buttons
+    full_fig, full_ax = plt.subplots(figsize=(6, 6))
+    for path, hex_color, line_width in all_paths:
+        full_ax.add_patch(PathPatch(path, facecolor='none', edgecolor=hex_color, linewidth=line_width))
+    full_ax.set_xlim(-size, size)
+    full_ax.set_ylim(-size, size)
+    full_ax.axis('off')
+    full_path = os.path.join(parent_dir, f"mandala_full_{timestamp}.svg")
+    full_fig.savefig(full_path, format='svg', bbox_inches='tight', pad_inches=0.1, transparent=True)
+    plt.close(full_fig)
+
+    # Save individual layers and color layers within the parent directory
+    layers_dir = os.path.join(parent_dir, "layers")
+    color_layers_dir = os.path.join(parent_dir, "color_layers")
+    os.makedirs(layers_dir, exist_ok=True)
+    os.makedirs(color_layers_dir, exist_ok=True)
+
+    # Save individual layers
+    for i, (path, hex_color, line_width) in enumerate(all_paths):
+        fig_layer, ax_layer = plt.subplots(figsize=(6, 6))
+        ax_layer.add_patch(PathPatch(path, facecolor='none', edgecolor=hex_color, linewidth=line_width))
+        ax_layer.set_xlim(-size, size)
+        ax_layer.set_ylim(-size, size)
+        ax_layer.axis('off')
+        layer_path = os.path.join(layers_dir, f'layer_{i + 1}.svg')
+        fig_layer.savefig(layer_path, format='svg', bbox_inches='tight', pad_inches=0.1, transparent=True)
+        plt.close(fig_layer)
+
+    # Save color layers
+    colors_used = set(hex_color for _, hex_color, _ in all_paths)
+    for hex_color in colors_used:
+        fig_color, ax_color = plt.subplots(figsize=(6, 6))
+        for path, path_color, line_width in all_paths:
+            if path_color == hex_color:
+                ax_color.add_patch(PathPatch(path, facecolor='none', edgecolor=hex_color, linewidth=line_width))
+        ax_color.set_xlim(-size, size)
+        ax_color.set_ylim(-size, size)
+        ax_color.axis('off')
+        color_layer_path = os.path.join(color_layers_dir, f'color_{hex_color[1:]}.svg')
+        fig_color.savefig(color_layer_path, format='svg', bbox_inches='tight', pad_inches=0.1, transparent=True)
+        plt.close(fig_color)
+
 
 size = 1.0
 layers = random.randrange(5,20)

@@ -1,20 +1,27 @@
 # Mandala Maker
 
-This Python script, termed as "Mandala Maker," is designed to create and export Arab-inspired geometric patterns. These patterns are intricate and based on Islamic geometric design principles, suitable for various artistic and design applications, including laser cutting.
+This Python script, known as "Mandala Maker," is designed to create and export intricate Arab-inspired geometric patterns. These patterns adhere to Islamic geometric design principles and are suitable for artistic and design applications such as laser cutting.
 
 ## Features
 
-- Randomized generation of complex geometric patterns.
-- Export functionality for patterns as SVG files.
-- Adjustable parameters for pattern complexity and aesthetics.
+- Generates complex geometric patterns with random variations.
+- Exports patterns as SVG files with organized folder structure.
+- Customizable pattern complexity and color aesthetics.
 
 ## Screenshot
 
 ![Generated Mandala Pattern](screen.png)
 
+## Folder Structure
+
+- `/mandala_generation_timestamp/` - Contains all outputs from a single generation session.
+  - `/layers/` - Individual SVG files for each layer.
+  - `/color_layers/` - SVG files grouped by color.
+  - `mandala_full_timestamp.svg` - A single SVG file with the full pattern.
+
 ## Usage
 
-Run the script to generate an initial pattern. Interact with the 'Generate' button to create new patterns, and use the 'Save SVGs' button to export the generated patterns into SVG format for each layer.
+Run the script to display an initial pattern. Use the 'Generate' button to create a new pattern, and the 'Save SVGs' button to save the pattern layers as SVG files.
 
 ## Requirements
 
@@ -23,10 +30,11 @@ Run the script to generate an initial pattern. Interact with the 'Generate' butt
 - Numpy
 
 ## Running the Script
-To execute the script and start the Mandala Maker:
 
+To start Mandala Maker:
+```
 python mandala_maker.py
-
+```
 ## ToDo
 - Integrate color palette customization within the user interface.
 - Enhance the algorithm for more advanced pattern interlacing.
