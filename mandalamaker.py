@@ -82,16 +82,13 @@ import matplotlib.colors as mcolors
 import random
 
 initial_zoom_out_factor = 1.2  # This factor can be adjusted based on the pattern size
-
-def generate_color_palette():
-    # Exclude cyan by avoiding hues close to cyan's hue in the HSV color space
-    hue = random.choice(np.concatenate((np.linspace(0, 0.4, 10), np.linspace(0.6, 1, 10))))
-    # Use color harmonies such as analogous or complementary color schemes
-    complementary_hue = (hue + 0.5) % 1.0
-    analogous_hue1 = (hue + 1/12) % 1.0
-    analogous_hue2 = (hue - 1/12) % 1.0
-    colors = mcolors.hsv_to_rgb([[hue, 1, 1], [complementary_hue, 1, 1], [analogous_hue1, 1, 1], [analogous_hue2, 1, 1]])
-    return colors.tolist()
+def generate_color_palette(num_colors):
+    colors = []
+    for _ in range(num_colors):
+        hue = random.random()  # Random hue from 0 to 1
+        color = mcolors.hsv_to_rgb([hue, 1, 1])
+        colors.append(color)
+    return colors
 
 
 def generate_base_shape(center, radius, num_sides):
@@ -127,11 +124,6 @@ def create_pattern(center, size, num_layers):
 
 
 
-def generate_color_palette():
-    base_color = mcolors.hsv_to_rgb(np.array([random.random(), 1, 1]))
-    complementary_color = mcolors.hsv_to_rgb(np.array([(base_color[0] + 0.5) % 1.0, 1, 1]))
-    return [base_color, complementary_color]
-
 def generate_interlaced_star(center, size, num_vertices):
     # Create the main star
     star_points = generate_star(center, size, num_vertices)
@@ -147,7 +139,9 @@ def generate_interlaced_star(center, size, num_vertices):
 def draw_pattern(ax, center, size, num_layers):
     global all_paths
     all_paths = []
-    color_palette = generate_color_palette()  # Generate a new color palette for each pattern
+    num_colors = random.randint(2, 5)  # Randomly choose between 2 to 5 colors
+    color_palette = generate_color_palette(num_colors)  # Generate a color palette with the chosen number of colors
+
 
     pattern_layers = create_pattern(center, size, num_layers)
     base_line_width = 1.0  # Base line width for the outermost layer

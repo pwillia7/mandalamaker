@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="349.2pt" height="347.04pt" viewBox="0 0 349.2 347.04" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2023-12-26T02:20:12.890623</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.7.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 347.04 
+L 349.2 347.04 
+L 349.2 -0 
+L 0 -0 
+L 0 347.04 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 338.784019 173.52 
+L 253.894792 152.410102 
+L 316.787531 91.957616 
+L 232.647817 115.846685 
+L 256.69201 32.249808 
+L 195.846976 94.736787 
+L 174.6 10.395233 
+L 153.353024 94.736787 
+L 92.50799 32.249808 
+L 116.552183 115.846685 
+L 32.412469 91.957616 
+L 95.305208 152.410102 
+L 10.415981 173.52 
+L 95.305208 194.629898 
+L 32.412469 255.082384 
+L 116.552183 231.193315 
+L 92.50799 314.790192 
+L 153.353024 252.303213 
+L 174.6 336.644767 
+L 195.846976 252.303213 
+L 256.69201 314.790192 
+L 232.647817 231.193315 
+L 316.787531 255.082384 
+L 253.894792 194.629898 
+L 338.784019 173.52 
+L 338.784019 173.52 
+" clip-path="url(#pf641ebd7dc)" style="fill: none; stroke: #ff8a00; stroke-width: 0.3; stroke-linejoin: miter"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf641ebd7dc">
+   <rect x="7.2" y="7.2" width="334.8" height="332.64"/>
+  </clipPath>
+ </defs>
+</svg>
